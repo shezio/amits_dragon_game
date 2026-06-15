@@ -1366,26 +1366,48 @@ function renderCutscene() {
         ctx.fillText(scene.emoji, emojiX, groundLine + 40 + bob);
     }
 
-    // Text box at bottom
-    const textBoxY = canvas.height - barH - 70;
+    // Text box at bottom with word wrap
+    const visibleText = scene.text.substring(0, Math.floor(cutscene.textProgress));
+    const fontSize = canvas.width < 500 ? 15 : 20;
+    ctx.font = `bold ${fontSize}px Heebo`;
+    ctx.textAlign = 'center';
+
+    const maxTextW = canvas.width * 0.76;
+    const words = visibleText.split(' ');
+    const lines = [];
+    let currentLine = '';
+    for (const word of words) {
+        const testLine = currentLine ? currentLine + ' ' + word : word;
+        if (ctx.measureText(testLine).width > maxTextW && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+        } else {
+            currentLine = testLine;
+        }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    const lineHeight = fontSize + 6;
+    const boxH = Math.max(50, lines.length * lineHeight + 24);
+    const textBoxY = canvas.height - barH - boxH - 20;
+
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(canvas.width * 0.1, textBoxY - 10, canvas.width * 0.8, 60);
+    ctx.fillRect(canvas.width * 0.1, textBoxY, canvas.width * 0.8, boxH);
     ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
     ctx.lineWidth = 2;
-    ctx.strokeRect(canvas.width * 0.1, textBoxY - 10, canvas.width * 0.8, 60);
+    ctx.strokeRect(canvas.width * 0.1, textBoxY, canvas.width * 0.8, boxH);
 
-    // Typewriter text
-    const visibleText = scene.text.substring(0, Math.floor(cutscene.textProgress));
-    ctx.font = 'bold 20px Heebo';
     ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.fillText(visibleText, canvas.width / 2, textBoxY + 25);
+    const textStartY = textBoxY + lineHeight + 4;
+    for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], canvas.width / 2, textStartY + i * lineHeight);
+    }
 
     // "Continue" prompt
     if (cutscene.waitingForInput) {
         ctx.font = '14px Heebo';
         ctx.fillStyle = 'rgba(255,255,255,' + (0.5 + Math.sin(frameCount * 0.1) * 0.5) + ')';
-        ctx.fillText('לחצו להמשך ▶', canvas.width / 2, textBoxY + 48);
+        ctx.fillText('לחצו להמשך ▶', canvas.width / 2, textBoxY + boxH - 6);
     }
 
     // Scene counter

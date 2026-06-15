@@ -86,12 +86,16 @@
         </div>
     </div>
 
-    <!-- Mobile Controls -->
+    <!-- Mobile Controls (RTL: forward=right side, backward=left side) -->
     <div id="mobile-controls">
-        <button class="ctrl-btn" id="ctrl-left">◀</button>
-        <button class="ctrl-btn" id="ctrl-jump">▲</button>
-        <button class="ctrl-btn" id="ctrl-right">▶</button>
-        <button class="ctrl-btn ctrl-action" id="ctrl-action">E</button>
+        <div class="mobile-left">
+            <button class="ctrl-btn" id="ctrl-left">◀</button>
+            <button class="ctrl-btn ctrl-action" id="ctrl-action">⚡</button>
+        </div>
+        <div class="mobile-right">
+            <button class="ctrl-btn" id="ctrl-jump">▲</button>
+            <button class="ctrl-btn" id="ctrl-right">▶</button>
+        </div>
     </div>
 
     <script type="module" src="js/game.js"></script>
