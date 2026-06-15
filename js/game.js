@@ -53,6 +53,7 @@ function setupMobileControls() {
             e.preventDefault();
             if (gameState === 'playing' && interactTarget) interact(interactTarget);
             else if (gameState === 'dialog') advanceDialog();
+            else if (gameState === 'cutscene') advanceCutscene();
         });
     }
 }
@@ -93,6 +94,8 @@ const ZONES = [
     { name: 'אחו ירוק', bg: 'bg_grasslands', color: '#87CEEB' },
     { name: 'יער הפטריות', bg: 'bg_shroom', color: '#5D8A3C' },
     { name: 'הטירה הקסומה', bg: 'bg_castle', color: '#8B7EC8' },
+    { name: 'האגם הקסום', bg: 'bg_sky', color: '#1E88E5', water: true },
+    { name: 'הפסגה האדומה', bg: 'bg_desert', color: '#B71C1C', mountain: true },
     { name: 'ארץ הדרקון', bg: 'bg_desert', color: '#FFB74D' }
 ];
 
@@ -118,6 +121,20 @@ const RIDDLES = [
         type: 'choice',
         choices: ['נחמה', 'נחישות', 'נחש', 'נחיתה'],
         answer: 1
+    },
+    {
+        title: 'שער רביעי - חשבון נפש',
+        text: 'בשלט ליד השער כתוב:\n"מי תרצה להיות כשתגדל?"\nמה התשובה שפתחה את השער בספר?',
+        type: 'choice',
+        choices: ['להיות עשיר ומפורסם', 'להיות אנשים בעלי אהבה, חמלה וכבוד לאחר', 'להיות גיבורי על', 'להיות הכי חזק'],
+        answer: 1
+    },
+    {
+        title: 'שער חמישי - חידת המקלות',
+        text: 'על השלט כתוב:\n1+1+1=3, אבל גם 1=3\nאיך 1 שווה 3?',
+        type: 'choice',
+        choices: ['כשכופלים מספר בעצמו', 'כשמחברים 3 מקלות ביחד הם הופכים לאחד שאי אפשר לשבור', 'כשמחלקים 3 ב-3', 'זה טריק - 1 לא שווה 3'],
+        answer: 1
     }
 ];
 
@@ -135,9 +152,19 @@ const WIZARD_DIALOGS = [
         { speaker: 'נחי הקוסם', text: 'וזכרו - אפשר לקפוץ פעמיים באוויר! קפיצה כפולה!' }
     ],
     [
-        { speaker: 'נחי הקוסם', text: 'הטירה הקסומה! כמעט הגעתם!' },
-        { speaker: 'נחי הקוסם', text: 'עוד חידה אחת ותפגשו את הדרקון...' },
-        { speaker: 'נחי הקוסם', text: 'הדרקון של עמית הוא דרקון מיוחד - דרקון של אומץ וחברות!' }
+        { speaker: 'נחי הקוסם', text: 'הטירה הקסומה! אבל המסע עוד לא נגמר...' },
+        { speaker: 'נחי הקוסם', text: 'מעבר לשער - אגם קסום עם דגים מעופפים!' },
+        { speaker: 'נחי הקוסם', text: 'תצטרכו לשחות ולצלול. בהצלחה חברים!' }
+    ],
+    [
+        { speaker: 'נחי הקוסם', text: 'האגם הקסום! כאן תשחו בין הגלים.' },
+        { speaker: 'נחי הקוסם', text: 'בדרך תצטרכו לחשוב - מי אני רוצה להיות כשאגדל?' },
+        { speaker: 'נחי הקוסם', text: 'אין תשובה נכונה אחת - כל אחד בוחר את הדרך שלו. העיקר להיות אנשים טובים!' }
+    ],
+    [
+        { speaker: 'נחי הקוסם', text: 'הפסגה האדומה! כאן כל אחד מכם ימצא מקל בדרך.' },
+        { speaker: 'נחי הקוסם', text: 'נסו לשבור מקל אחד - קל! אבל שימו 3 מקלות ביחד...' },
+        { speaker: 'נחי הקוסם', text: 'בלתי שביר! כמו שלושה חברים ביחד. אחד שווה שלוש!' }
     ]
 ];
 
@@ -170,28 +197,36 @@ function generateWorld() {
 
     for (let zone = 0; zone < ZONES.length; zone++) {
         const zoneStart = zone * zoneWidth;
+        const zoneInfo = ZONES[zone];
+        const isWater = zoneInfo.water;
+        const isMountain = zoneInfo.mountain;
 
         // Ground — fill from groundY to bottom
         for (let x = zoneStart; x < zoneStart + zoneWidth; x += TILE) {
-            const gapChance = (zone * 0.03) + 0.01;
+            let gapChance = (zone * 0.02) + 0.01;
+            if (isWater) gapChance = 0.55;
             if (Math.random() < gapChance && x > zoneStart + 400 && x < zoneStart + zoneWidth - 500) {
                 continue;
             }
-            platforms.push({ x, y: groundY, w: TILE, h: TILE, type: 'ground', tile: 'grassMid' });
+            const groundTile = isWater ? 'bridge' : isMountain ? 'dirtCenter' : 'grassMid';
+            platforms.push({ x, y: groundY, w: TILE, h: TILE, type: 'ground', tile: groundTile });
             for (let fill = groundY + TILE; fill < canvas.height + TILE; fill += TILE) {
                 platforms.push({ x, y: fill, w: TILE, h: TILE, type: 'sub', tile: 'dirtCenter' });
             }
         }
 
-        // Floating platforms — limited height so all reachable with double jump
-        const maxPlatformHeight = 160;
-        const numPlatforms = 6 + zone * 2;
+        // Floating platforms
+        const maxPlatformHeight = isMountain ? 220 : 160;
+        const numPlatforms = isWater ? 12 : (isMountain ? 14 : 6 + zone * 2);
         for (let i = 0; i < numPlatforms; i++) {
             const px = zoneStart + 250 + (i / numPlatforms) * (zoneWidth - 500);
-            const py = groundY - 80 - Math.random() * maxPlatformHeight;
-            const pWidth = 2 + Math.floor(Math.random() * 2);
+            const py = isMountain
+                ? groundY - 60 - (i / numPlatforms) * maxPlatformHeight
+                : groundY - 80 - Math.random() * maxPlatformHeight;
+            const pWidth = isWater ? 1 + Math.floor(Math.random() * 2) : 2 + Math.floor(Math.random() * 2);
             for (let t = 0; t < pWidth; t++) {
-                const tile = t === 0 ? 'grassHalfLeft' : t === pWidth - 1 ? 'grassHalfRight' : 'grassHalfMid';
+                const tile = isWater ? 'bridge'
+                    : t === 0 ? 'grassHalfLeft' : t === pWidth - 1 ? 'grassHalfRight' : 'grassHalfMid';
                 platforms.push({ x: px + t * TILE, y: py, w: TILE, h: TILE / 2, type: 'float', tile });
             }
             // Coin or star on platform
@@ -206,10 +241,11 @@ function generateWorld() {
             }
         }
 
-        // Ground-level stars (easy to get)
-        for (let i = 0; i < 4; i++) {
+        // Ground-level stars
+        const numGroundStars = isWater ? 2 : 4;
+        for (let i = 0; i < numGroundStars; i++) {
             collectibles.push({
-                x: zoneStart + 200 + i * (zoneWidth / 5),
+                x: zoneStart + 200 + i * (zoneWidth / (numGroundStars + 1)),
                 y: groundY - 50,
                 w: 30, h: 30, type: 'star', collected: false, frame: 0
             });
@@ -219,7 +255,7 @@ function generateWorld() {
         const numEnemies = 2 + zone * 2;
         for (let i = 0; i < numEnemies; i++) {
             const ex = zoneStart + 500 + (i / numEnemies) * (zoneWidth - 700);
-            const etype = Math.random() > 0.5 ? 'slime' : (Math.random() > 0.5 ? 'fly' : 'bee');
+            const etype = isWater ? 'fly' : (Math.random() > 0.5 ? 'slime' : (Math.random() > 0.5 ? 'fly' : 'bee'));
             enemies.push({
                 x: ex,
                 y: etype === 'fly' || etype === 'bee' ? groundY - 80 - Math.random() * 60 : groundY - 40,
@@ -255,14 +291,17 @@ function generateWorld() {
         }
 
         // Decorations
+        const decoPool = isWater ? ['plant', 'vine', 'plant', 'vine']
+            : isMountain ? ['rock', 'rock', 'plant', 'bush']
+            : ['tree', 'rock', 'plant', 'mushRed', 'mushBrown', 'bush'];
         for (let i = 0; i < 6; i++) {
             const dx = zoneStart + Math.random() * zoneWidth;
-            const dtype = ['tree', 'rock', 'plant', 'mushRed', 'mushBrown', 'bush'][Math.floor(Math.random() * 6)];
+            const dtype = decoPool[Math.floor(Math.random() * decoPool.length)];
             decorations.push({ x: dx, y: groundY, type: dtype });
         }
 
         // Wizard NPC before gate
-        if (zone < 3) {
+        if (zone < ZONES.length - 1) {
             npcs.push({
                 x: zoneStart + zoneWidth - 400, y: groundY - 80,
                 w: 60, h: 80, zone, talked: false, type: 'wizard'
@@ -270,7 +309,7 @@ function generateWorld() {
         }
 
         // Gate between zones
-        if (zone < 3) {
+        if (zone < ZONES.length - 1) {
             gates.push({
                 x: zoneStart + zoneWidth - 150, y: groundY - 140,
                 w: 80, h: 140, zone, open: false,
@@ -282,7 +321,7 @@ function generateWorld() {
     // Dragon at end — on the ground
     npcs.push({
         x: worldWidth - 300, y: groundY - 70,
-        w: 70, h: 70, zone: 3, talked: false, type: 'dragon'
+        w: 70, h: 70, zone: ZONES.length - 1, talked: false, type: 'dragon'
     });
 }
 
@@ -314,6 +353,12 @@ async function init() {
     document.getElementById('btn-replay').addEventListener('click', () => location.reload());
 
     canvas.addEventListener('click', handleClick);
+    canvas.addEventListener('touchstart', e => {
+        if (gameState === 'cutscene' || gameState === 'dialog') {
+            e.preventDefault();
+            handleClick();
+        }
+    });
     window.addEventListener('keydown', handleKeyPress);
     setupMobileControls();
 
@@ -590,7 +635,7 @@ function update() {
     if (camera.y > 0) camera.y = 0;
     if (camera.y < -(canvas.height * 0.3)) camera.y = -(canvas.height * 0.3);
 
-    currentZone = Math.min(3, Math.floor(player.x / 3500));
+    currentZone = Math.min(ZONES.length - 1, Math.floor(player.x / 3500));
     updateHUD();
 }
 
@@ -853,7 +898,7 @@ function updateHUD() {
     if (gate && !gate.open) {
         const needed = gate.starsNeeded;
         document.getElementById('hud-objective').textContent = `אספו ${needed} כוכבים לפתיחת השער (${Math.floor(stars)}/${needed})`;
-    } else if (currentZone < 3) {
+    } else if (currentZone < ZONES.length - 1) {
         document.getElementById('hud-objective').textContent = 'מצאו את נחי הקוסם!';
     } else {
         document.getElementById('hud-objective').textContent = 'הגיעו אל הדרקון!';
@@ -876,6 +921,9 @@ function render() {
 
     drawBackground();
 
+    if (zone.water) drawWaterOverlay();
+    if (zone.mountain) drawMountainOverlay();
+
     ctx.save();
     ctx.translate(-camera.x, -camera.y);
 
@@ -893,6 +941,78 @@ function render() {
     drawCharacter(companions[0], companions[0].prefix);
     drawPlayer();
 
+    if (zone.water) drawWaterSurface();
+
+    ctx.restore();
+}
+
+function drawWaterOverlay() {
+    const groundY = canvas.height * 0.75;
+    const waterY = groundY - 30;
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    const grad = ctx.createLinearGradient(0, waterY, 0, canvas.height);
+    grad.addColorStop(0, '#4FC3F7');
+    grad.addColorStop(1, '#0277BD');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, waterY, canvas.width, canvas.height - waterY);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+}
+
+function drawWaterSurface() {
+    const groundY = canvas.height * 0.75;
+    const waterY = groundY - 30 - camera.y;
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = '#B3E5FC';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 0; x < canvas.width; x += 6) {
+        const wave = Math.sin((x + frameCount * 2 + camera.x) * 0.03) * 4;
+        if (x === 0) ctx.moveTo(x, waterY + wave);
+        else ctx.lineTo(x, waterY + wave);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = '#4FC3F7';
+    for (let i = 0; i < 8; i++) {
+        const bx = ((frameCount * 0.5 + i * 120) % (canvas.width + 40)) - 20;
+        const by = waterY + 20 + Math.sin(frameCount * 0.02 + i) * 30;
+        ctx.beginPath();
+        ctx.arc(bx, by, 5 + Math.sin(frameCount * 0.05 + i) * 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawMountainOverlay() {
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = '#5D4037';
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height);
+    const peaks = 5;
+    for (let i = 0; i <= peaks; i++) {
+        const px = (i / peaks) * canvas.width;
+        const py = canvas.height * 0.2 + Math.sin(i * 1.7) * canvas.height * 0.15;
+        ctx.lineTo(px, py);
+    }
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 0.1;
+    ctx.fillStyle = '#BF360C';
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height);
+    for (let i = 0; i <= peaks; i++) {
+        const px = (i / peaks) * canvas.width;
+        const py = canvas.height * 0.4 + Math.sin(i * 2.3 + 1) * canvas.height * 0.1;
+        ctx.lineTo(px, py);
+    }
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
 }
 
@@ -1192,6 +1312,23 @@ const CUTSCENE_DATA = {
         ]
     },
     gate2: {
+        bg: 'bg_sky',
+        scenes: [
+            { text: 'השער נפתח ולפניהם נגלה אגם רחב ידיים!', chars: ['p1', 'p2', 'p3'], action: 'walk', emoji: '🌊' },
+            { text: 'דגים מעופפים עם ניצנוצי קסם בזנבותיהם שוחים מסביב.', chars: [], action: 'none', emoji: '🐟' },
+            { text: '"בשחייה!" אמרה נגה בביטחון. "יש לנו חליפות שחייה!"', chars: ['p1', 'p2', 'p3'], action: 'stand', emoji: '🏊' },
+        ]
+    },
+    gate3: {
+        bg: 'bg_desert',
+        scenes: [
+            { text: 'הילדים חצו את האגם! לפניהם הפסגה האדומה.', chars: ['p1', 'p2', 'p3'], action: 'walk', emoji: '⛰️' },
+            { text: 'בדרך כל אחד מצא מקל. שחר ניסה לשבור את שלו - נשבר בקלות!', chars: ['p1'], action: 'stand', emoji: '🪵' },
+            { text: 'אבל כששמו שלושה מקלות ביחד - אף אחד לא הצליח לשבור אותם!', chars: ['p1', 'p2', 'p3'], action: 'stand', emoji: '💪' },
+            { text: '"1 שווה 3!" צחקו. "ביחד אנחנו חזקים!"', chars: ['p1', 'p2', 'p3'], action: 'walk' },
+        ]
+    },
+    gate4: {
         bg: 'bg_desert',
         scenes: [
             { text: 'השער האחרון נפתח! ארץ הדרקון!', chars: ['p1', 'p2', 'p3'], action: 'walk', emoji: '✨' },
