@@ -124,7 +124,7 @@ const RIDDLES = [
     },
     {
         title: 'שער רביעי - חשבון נפש',
-        text: 'בשלט ליד השער כתוב:\n"מי תרצה להיות כשתגדל?"\nמה התשובה שפתחה את השער בספר?',
+        text: 'בשלט ליד השער כתוב:\n"מי תרצה להיות כשתגדל?"',
         type: 'choice',
         choices: ['להיות עשיר ומפורסם', 'להיות אנשים בעלי אהבה, חמלה וכבוד לאחר', 'להיות גיבורי על', 'להיות הכי חזק'],
         answer: 1
@@ -359,6 +359,9 @@ async function init() {
             handleClick();
         }
     });
+    const dialogEl = document.getElementById('dialog');
+    dialogEl.addEventListener('click', () => { if (gameState === 'dialog') advanceDialog(); });
+    dialogEl.addEventListener('touchstart', e => { e.preventDefault(); if (gameState === 'dialog') advanceDialog(); });
     window.addEventListener('keydown', handleKeyPress);
     setupMobileControls();
 
