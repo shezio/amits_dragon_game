@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הדרקון של עמית - מסע בממד החלומות</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <canvas id="game"></canvas>
+
+    <div id="ui">
+        <!-- Loading -->
+        <div id="loading">
+            <div class="load-content">
+                <div class="load-icon">🐉</div>
+                <div class="load-text">מכינים את ממד החלומות...</div>
+                <div class="load-bar"><div class="load-fill" id="load-fill"></div></div>
+            </div>
+        </div>
+
+        <!-- Title -->
+        <div id="title" class="screen hidden">
+            <h1>🐉 הדרקון של עמית</h1>
+            <p class="subtitle">מסע בממד החלומות</p>
+            <p class="dedication">לזכרו של סמ"ר עמית בונצל הי"ד<br>לוחם ומפקד בחטיבת הצנחנים</p>
+            <p class="quote">"הרבה אנשים אומרים שהם רוצים להצליח,<br>אבל לא כולם מוכנים לשלם את המחיר שצריך כדי להצליח"</p>
+            <button id="btn-start">🌟 התחילו את המסע</button>
+            <p class="controls">← → = תנועה &nbsp;|&nbsp; רווח = קפיצה &nbsp;|&nbsp; E = פעולה</p>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud" class="hidden">
+            <div class="hud-top">
+                <div class="hud-left">
+                    <span class="hud-lives" id="hud-lives">❤️❤️❤️</span>
+                    <span class="hud-stars" id="hud-stars">⭐ 0</span>
+                </div>
+                <div class="hud-chapter" id="hud-chapter"></div>
+            </div>
+            <div class="hud-objective" id="hud-objective"></div>
+            <div class="hud-music" id="hud-music">
+                <button id="btn-mute" title="השתק">🔊</button>
+                <input type="range" id="vol-slider" min="0" max="100" value="30" title="עוצמה">
+                <button id="btn-slower" title="איטי יותר">🐢</button>
+                <span id="speed-label">1x</span>
+                <button id="btn-faster" title="מהיר יותר">🐇</button>
+            </div>
+        </div>
+
+        <!-- Interact -->
+        <div id="interact-prompt" class="hidden"><span>E</span> לפעולה</div>
+
+        <!-- Dialog -->
+        <div id="dialog" class="hidden">
+            <div class="dialog-box">
+                <div class="dialog-speaker" id="dialog-speaker"></div>
+                <div class="dialog-text" id="dialog-text"></div>
+                <div class="dialog-next">▼ לחצו</div>
+            </div>
+        </div>
+
+        <!-- Riddle -->
+        <div id="riddle" class="hidden">
+            <div class="riddle-box">
+                <h3 id="riddle-title"></h3>
+                <p id="riddle-text"></p>
+                <div id="riddle-area"></div>
+                <p id="riddle-hint" class="hint hidden"></p>
+            </div>
+        </div>
+
+        <!-- Ending -->
+        <div id="ending" class="screen hidden">
+            <h1>🐉 הגעתם אל הדרקון של עמית!</h1>
+            <p class="quote">"הרבה אנשים אומרים שהם רוצים להצליח,<br>אבל לא כולם מוכנים לשלם את המחיר שצריך כדי להצליח"</p>
+            <div class="memorial">
+                <p><strong>סמ"ר עמית בונצל הי"ד</strong></p>
+                <p>מפקד צוות בחטיבת הצנחנים</p>
+                <p>נפל בקרב הרואי בשכונת סג'אעיה שברצועת עזה</p>
+                <p>כ"ג בכסלו תשפ"ד (6.12.2023)</p>
+            </div>
+            <p class="ending-stars" id="ending-stars"></p>
+            <button id="btn-replay">🔄 שחקו שוב</button>
+        </div>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+        <button class="ctrl-btn" id="ctrl-left">◀</button>
+        <button class="ctrl-btn" id="ctrl-jump">▲</button>
+        <button class="ctrl-btn" id="ctrl-right">▶</button>
+        <button class="ctrl-btn ctrl-action" id="ctrl-action">E</button>
+    </div>
+
+    <script type="module" src="js/game.js"></script>
+</body>
+</html>
