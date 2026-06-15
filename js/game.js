@@ -463,16 +463,30 @@ function update() {
     if (keys['ArrowLeft'] || keys['KeyA']) { player.vx = -speed; player.facing = -1; }
     if (keys['ArrowRight'] || keys['KeyD']) { player.vx = speed; player.facing = 1; }
 
-    // Double jump
+    // Swimming in water zone — reduced gravity, unlimited jumps (swim strokes)
+    const inWater = ZONES[currentZone] && ZONES[currentZone].water;
+
+    // Double jump (or swim)
     if (justPressed['Space'] || justPressed['ArrowUp'] || justPressed['KeyW']) {
-        if (player.jumpsLeft > 0) {
+        if (inWater) {
+            player.vy = JUMP_FORCE * 0.6;
+            player.onGround = false;
+        } else if (player.jumpsLeft > 0) {
             player.vy = JUMP_FORCE;
             player.jumpsLeft--;
             player.onGround = false;
         }
     }
 
-    player.vy += GRAVITY;
+    player.vy += inWater ? GRAVITY * 0.35 : GRAVITY;
+    if (inWater && player.vy > 3) player.vy = 3;
+
+    // Mountain wind pushback
+    const onMountain = ZONES[currentZone] && ZONES[currentZone].mountain;
+    if (onMountain && !player.onGround) {
+        player.vx -= 0.3;
+    }
+
     player.x += player.vx;
     player.y += player.vy;
 
@@ -505,13 +519,13 @@ function update() {
     if (player.x < 0) player.x = 0;
     if (player.x > worldWidth - player.w) player.x = worldWidth - player.w;
 
-    // Fall recovery
+    // Fall recovery (in water zone — float back up without damage)
     if (player.y > canvas.height + 100) {
         const groundY = canvas.height * 0.75;
         player.y = groundY - player.h - 100;
         player.vy = 0;
         player.x = Math.max(0, player.x - 200);
-        hurtPlayer();
+        if (!inWater) hurtPlayer();
     }
 
     // Gate blocking
